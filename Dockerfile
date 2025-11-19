@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM ubuntu:22.04
 
 # ---------------------------
 # System Update
@@ -8,7 +8,7 @@ RUN apt update -y && apt upgrade -y
 # ---------------------------
 # Railway Environment Variables
 # ---------------------------
-ENV NGROK_TOKEN="2Ten9TkU9KxLJV9UH8gU4zlvuNR_7nMVEL6mYrU4tnrRrNHvt"
+ENV NGROK_TOKEN="352fgAmo0EXgi9erM4ijPKHDzUj_e4eJ7hjcTx2brKzNRjFP"
 ENV ROOT_PASS="root"
 
 # ---------------------------
@@ -28,10 +28,9 @@ RUN wget -O /ngrok.zip https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linu
     rm -f /ngrok.zip
 
 # ---------------------------
-# Install Neofetch (Ubuntu 24 removed it, so use curl)
+# Install Neofetch (Ubuntu 24 removed it, but 22 supports)
 # ---------------------------
-RUN curl -L https://raw.githubusercontent.com/dylanaraps/neofetch/master/neofetch -o /usr/local/bin/neofetch && \
-    chmod +x /usr/local/bin/neofetch
+RUN apt install -y neofetch
 
 # ---------------------------
 # SSH Configuration
