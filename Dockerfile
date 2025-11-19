@@ -8,7 +8,7 @@ RUN apt update -y && apt upgrade -y
 # ---------------------------
 # Railway Environment Variables
 # ---------------------------
-ENV NGROK_TOKEN="352fgAmo0EXgi9erM4ijPKHDzUj_e4eJ7hjcTx2brKzNRjFP"
+ENV NGROK_TOKEN="35hJ3SHCS0NfC907UKenZ9qM3g6_4amtcxnCpvZKAxcWNFiVh"
 ENV ROOT_PASS="root"
 
 # ---------------------------
