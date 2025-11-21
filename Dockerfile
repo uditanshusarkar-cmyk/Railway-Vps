@@ -9,25 +9,31 @@ RUN apt update -y && apt upgrade -y
 # Environment Variables
 # ---------------------------
 ENV ROOT_PASS="root"
-ENV CF_TUNNEL_TOKEN="eyJhIjoiODRjODY1MGE2ZWIzOWE3YzQ5N2ExY2Q1ZDUwODAyM2YiLCJ0IjoiMjg1Mjg2OTQtYzkyYS00M2U4LWE1M2ItMGVmMWZhMjkxZmU1IiwicyI6Ik16Wm1abVl6T1RVdE0yVXpOUzAwT1dReUxUa3dZemN0WldVd016TTJaREZoWWpFMiJ9"
+ENV USERNAME="uditanshu"
+ENV USER_PASS="uditanshu"
+ENV LX_TOKEN="hCVItCCQ8TfcwMFBuMko4CtHKJ3JxR83GRO71USe"
 
 # ---------------------------
-# Install Packages
+# Essentials
 # ---------------------------
-RUN apt install -y sudo openssh-server wget unzip curl git make nano htop
-
-RUN echo "root ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
-    echo "%sudo ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+RUN apt install -y sudo openssh-server wget curl git unzip make nano htop snapd
 
 # ---------------------------
-# Install Cloudflared
+# Create User
 # ---------------------------
-RUN mkdir -p --mode=0755 /usr/share/keyrings && \
-    curl -fsSL https://pkg.cloudflare.com/cloudflare-public-v2.gpg \
-        | tee /usr/share/keyrings/cloudflare-public-v2.gpg >/dev/null && \
-    echo 'deb [signed-by=/usr/share/keyrings/cloudflare-public-v2.gpg] https://pkg.cloudflare.com/cloudflared any main' \
-        | tee /etc/apt/sources.list.d/cloudflared.list && \
-    apt update && apt install -y cloudflared
+RUN useradd -m -s /bin/bash $USERNAME && \
+    echo "$USERNAME:$USER_PASS" | chpasswd && \
+    usermod -aG sudo $USERNAME
+
+# Allow sudo without password
+RUN echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# ---------------------------
+# Install LocalXpose (TunnelX)
+# ---------------------------
+RUN ln -s /var/lib/snapd/snap /snap || true && \
+    snap install core && \
+    snap install localxpose
 
 # ---------------------------
 # Install Neofetch
@@ -39,24 +45,33 @@ RUN apt install -y neofetch
 # ---------------------------
 RUN mkdir -p /run/sshd && \
     echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
-    echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
+    echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config && \
+    echo "AllowUsers root $USERNAME" >> /etc/ssh/sshd_config
 
 # ---------------------------
-# Entry Script (NO SYSTEMD)
+# ENTRY SCRIPT (Auto Start)
 # ---------------------------
 RUN printf '#!/bin/bash\n\
 echo "root:${ROOT_PASS}" | chpasswd\n\
+echo "${USERNAME}:${USER_PASS}" | chpasswd\n\
 \n\
-# Start Cloudflare Tunnel manually\n\
-cloudflared tunnel run --token $CF_TUNNEL_TOKEN &\n\
+echo "[+] Authenticating LocalXpose..."\n\
+localxpose authtoken $LX_TOKEN\n\
 \n\
-# Show system info\n\
+echo "[+] Starting LocalXpose tunnels..."\n\
+localxpose tcp 22 &\n\
+localxpose http 80 &\n\
+localxpose http 8080 &\n\
+\n\
+echo "[+] System Info:"\n\
 neofetch\n\
 \n\
-# Start SSH server\n\
-exec /usr/sbin/sshd -D\n' > /entry.sh
+echo "[+] Starting SSH server..."\n\
+exec /usr/sbin/sshd -D\n\
+' > /entry.sh
 
 RUN chmod +x /entry.sh
 
-EXPOSE 22
+EXPOSE 22 80 8080
+
 CMD ["/entry.sh"]
