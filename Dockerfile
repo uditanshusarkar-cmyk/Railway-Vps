@@ -16,24 +16,22 @@ ENV LX_TOKEN="hCVItCCQ8TfcwMFBuMko4CtHKJ3JxR83GRO71USe"
 # ---------------------------
 # Essentials
 # ---------------------------
-RUN apt install -y sudo openssh-server wget curl git unzip make nano htop snapd
+RUN apt install -y sudo openssh-server wget curl git unzip make nano htop
 
 # ---------------------------
 # Create User
 # ---------------------------
 RUN useradd -m -s /bin/bash $USERNAME && \
     echo "$USERNAME:$USER_PASS" | chpasswd && \
-    usermod -aG sudo $USERNAME
-
-# Allow sudo without password
-RUN echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+    usermod -aG sudo $USERNAME && \
+    echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # ---------------------------
-# Install LocalXpose (TunnelX)
+# Install LocalXpose (NO SNAP)
 # ---------------------------
-RUN ln -s /var/lib/snapd/snap /snap || true && \
-    snap install core && \
-    snap install localxpose
+RUN wget https://downloads.localxpose.io/localxpose_3.3.0_linux_amd64.deb && \
+    apt install -y ./localxpose_3.3.0_linux_amd64.deb && \
+    rm localxpose_3.3.0_linux_amd64.deb
 
 # ---------------------------
 # Install Neofetch
@@ -49,16 +47,16 @@ RUN mkdir -p /run/sshd && \
     echo "AllowUsers root $USERNAME" >> /etc/ssh/sshd_config
 
 # ---------------------------
-# ENTRY SCRIPT (Auto Start)
+# ENTRY SCRIPT
 # ---------------------------
 RUN printf '#!/bin/bash\n\
 echo "root:${ROOT_PASS}" | chpasswd\n\
 echo "${USERNAME}:${USER_PASS}" | chpasswd\n\
 \n\
-echo "[+] Authenticating LocalXpose..."\n\
+echo "[+] Authenticating TunnelX..."\n\
 localxpose authtoken $LX_TOKEN\n\
 \n\
-echo "[+] Starting LocalXpose tunnels..."\n\
+echo "[+] Starting TunnelX Tunnels..."\n\
 localxpose tcp 22 &\n\
 localxpose http 80 &\n\
 localxpose http 8080 &\n\
