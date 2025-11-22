@@ -11,7 +11,7 @@ RUN apt update -y && apt upgrade -y
 ENV ROOT_PASS="root"
 ENV USERNAME="uditanshu"
 ENV USER_PASS="uditanshu"
-ENV LX_TOKEN="hCVItCCQ8TfcwMFBuMko4CtHKJ3JxR83GRO71USe"
+ENV NGROK_TOKEN="352fgAmo0EXgi9erM4ijPKHDzUj_e4eJ7hjcTx2brKzNRjFP"
 
 # ---------------------------
 # Essentials
@@ -27,11 +27,12 @@ RUN useradd -m -s /bin/bash $USERNAME && \
     echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # ---------------------------
-# Install LocalXpose (NO SNAP)
+# Install Ngrok (binary)
 # ---------------------------
-RUN wget https://downloads.localxpose.io/localxpose_3.3.0_linux_amd64.deb && \
-    apt install -y ./localxpose_3.3.0_linux_amd64.deb && \
-    rm localxpose_3.3.0_linux_amd64.deb
+RUN wget -q -O /tmp/ngrok.tgz https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz && \
+    tar -xzf /tmp/ngrok.tgz -C /usr/local/bin && \
+    chmod +x /usr/local/bin/ngrok && \
+    rm /tmp/ngrok.tgz
 
 # ---------------------------
 # Install Neofetch
@@ -53,18 +54,18 @@ RUN printf '#!/bin/bash\n\
 echo "root:${ROOT_PASS}" | chpasswd\n\
 echo "${USERNAME}:${USER_PASS}" | chpasswd\n\
 \n\
-echo "[+] Authenticating TunnelX..."\n\
-localxpose authtoken $LX_TOKEN\n\
+echo "[+] Authenticating Ngrok..." \n\
+ngrok config add-authtoken ${NGROK_TOKEN}\n\
 \n\
-echo "[+] Starting TunnelX Tunnels..."\n\
-localxpose tcp 22 &\n\
-localxpose http 80 &\n\
-localxpose http 8080 &\n\
+echo "[+] Starting Ngrok Tunnels..." \n\
+ngrok tcp 22 --log stdout &\n\
+ngrok http 80 --log stdout &\n\
+ngrok http 8080 --log stdout &\n\
 \n\
 echo "[+] System Info:"\n\
 neofetch\n\
 \n\
-echo "[+] Starting SSH server..."\n\
+echo "[+] Starting SSH server..." \n\
 exec /usr/sbin/sshd -D\n\
 ' > /entry.sh
 
